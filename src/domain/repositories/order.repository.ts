@@ -6,7 +6,7 @@ export interface OrderRepository {
   findAll(
     page: number,
     limit: number,
-    state?: OrderState
+    state?: OrderState,
   ): Promise<{ orders: Order[]; total: number }>;
   update(id: string, order: Partial<Order>): Promise<Order | null>;
 }

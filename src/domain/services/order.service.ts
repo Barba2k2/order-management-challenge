@@ -1,22 +1,30 @@
-import { Order, OrderState, Service } from '../entities/order.entity';
+import { OrderState, Service } from '../entities/order.entity';
 
 export class OrderDomainService {
   calculateTotalValue(services: Service[]): number {
     return services.reduce((total, service) => total + service.value, 0);
   }
 
-  canTransitionState(currentState: OrderState, targetState: OrderState): boolean {
+  canTransitionState(
+    currentState: OrderState,
+    targetState: OrderState,
+  ): boolean {
     const validTransitions: Record<OrderState, OrderState[]> = {
       CREATED: ['ANALYSIS'],
       ANALYSIS: ['COMPLETED'],
-      COMPLETED: [] // No further transitions allowed
+      COMPLETED: [], // No further transitions allowed
     };
 
     const allowedTransitions = validTransitions[currentState];
     return allowedTransitions.includes(targetState);
   }
 
-  validateOrderForCreation(lab: string, patient: string, customer: string, services: Service[]): {
+  validateOrderForCreation(
+    lab: string,
+    patient: string,
+    customer: string,
+    services: Service[],
+  ): {
     isValid: boolean;
     errors: string[];
   } {
@@ -45,7 +53,7 @@ export class OrderDomainService {
 
     return {
       isValid: errors.length === 0,
-      errors
+      errors,
     };
   }
 }
