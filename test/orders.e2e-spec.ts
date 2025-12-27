@@ -1,11 +1,22 @@
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
-import * as request from 'supertest';
-import { AppModule } from '../../src/app.module';
+import request from 'supertest';
+import type { App } from 'supertest/types';
+import { getConnectionToken } from '@nestjs/mongoose';
+import { Connection } from 'mongoose';
+import { AppModule } from '../src/app.module';
+import type {
+  OrderResponseDto,
+  ListOrdersResponseDto,
+} from '../src/application/dtos/order.dtos';
+import type { LoginResponseDto } from '../src/application/dtos/auth.dtos';
 
 describe('OrdersController (e2e)', () => {
   let app: INestApplication;
   let authToken: string;
+
+  const getServer = (): App => app.getHttpServer() as App;
 
   beforeAll(async () => {
     const moduleFixture: TestingModule = await Test.createTestingModule({
@@ -13,10 +24,15 @@ describe('OrdersController (e2e)', () => {
     }).compile();
 
     app = moduleFixture.createNestApplication();
+    app.setGlobalPrefix('api');
     await app.init();
 
+    // Clean database before tests
+    const connection = app.get<Connection>(getConnectionToken());
+    await connection.dropDatabase();
+
     // Register and login a test user to get auth token
-    await request(app.getHttpServer())
+    await request(getServer())
       .post('/api/auth/register')
       .send({
         email: 'test@example.com',
@@ -24,7 +40,7 @@ describe('OrdersController (e2e)', () => {
       })
       .expect(201);
 
-    const loginResponse = await request(app.getHttpServer())
+    const loginResponse = await request(getServer())
       .post('/api/auth/login')
       .send({
         email: 'test@example.com',
@@ -32,7 +48,8 @@ describe('OrdersController (e2e)', () => {
       })
       .expect(200);
 
-    authToken = loginResponse.body.token;
+    const loginBody = loginResponse.body as LoginResponseDto;
+    authToken = loginBody.token;
   });
 
   afterAll(async () => {
@@ -40,7 +57,7 @@ describe('OrdersController (e2e)', () => {
   });
 
   it('/api/orders (POST) - should create a new order', () => {
-    return request(app.getHttpServer())
+    return request(getServer())
       .post('/api/orders')
       .set('Authorization', `Bearer ${authToken}`)
       .send({
@@ -57,35 +74,37 @@ describe('OrdersController (e2e)', () => {
       })
       .expect(201)
       .expect((res) => {
-        expect(res.body.lab).toBe('Test Lab');
-        expect(res.body.patient).toBe('Test Patient');
-        expect(res.body.customer).toBe('Test Customer');
-        expect(res.body.state).toBe('CREATED');
-        expect(res.body.status).toBe('ACTIVE');
-        expect(res.body.services).toHaveLength(1);
-        expect(res.body.services[0].name).toBe('Service 1');
-        expect(res.body.services[0].value).toBe(100);
-        expect(res.body.services[0].status).toBe('PENDING');
+        const body = res.body as OrderResponseDto;
+        expect(body.lab).toBe('Test Lab');
+        expect(body.patient).toBe('Test Patient');
+        expect(body.customer).toBe('Test Customer');
+        expect(body.state).toBe('CREATED');
+        expect(body.status).toBe('ACTIVE');
+        expect(body.services).toHaveLength(1);
+        expect(body.services[0].name).toBe('Service 1');
+        expect(body.services[0].value).toBe(100);
+        expect(body.services[0].status).toBe('PENDING');
       });
   });
 
   it('/api/orders (GET) - should list orders', () => {
-    return request(app.getHttpServer())
+    return request(getServer())
       .get('/api/orders')
       .set('Authorization', `Bearer ${authToken}`)
       .expect(200)
       .expect((res) => {
-        expect(res.body).toHaveProperty('orders');
-        expect(res.body).toHaveProperty('total');
-        expect(res.body).toHaveProperty('page');
-        expect(res.body).toHaveProperty('totalPages');
-        expect(Array.isArray(res.body.orders)).toBe(true);
+        const body = res.body as ListOrdersResponseDto;
+        expect(body).toHaveProperty('orders');
+        expect(body).toHaveProperty('total');
+        expect(body).toHaveProperty('page');
+        expect(body).toHaveProperty('totalPages');
+        expect(Array.isArray(body.orders)).toBe(true);
       });
   });
 
   it('/api/orders/:id/advance (PATCH) - should advance order state', async () => {
     // First create an order
-    const createResponse = await request(app.getHttpServer())
+    const createResponse = await request(getServer())
       .post('/api/orders')
       .set('Authorization', `Bearer ${authToken}`)
       .send({
@@ -102,22 +121,24 @@ describe('OrdersController (e2e)', () => {
       })
       .expect(201);
 
-    const orderId = createResponse.body.id;
+    const createBody = createResponse.body as OrderResponseDto;
+    const orderId = createBody.id;
 
     // Then advance the order state
-    return request(app.getHttpServer())
+    return request(getServer())
       .patch(`/api/orders/${orderId}/advance`)
       .set('Authorization', `Bearer ${authToken}`)
       .expect(200)
       .expect((res) => {
-        expect(res.body.id).toBe(orderId);
-        expect(res.body.state).toBe('ANALYSIS');
+        const body = res.body as OrderResponseDto;
+        expect(body.id).toBe(orderId);
+        expect(body.state).toBe('ANALYSIS');
       });
   });
 
   it('/api/orders/:id/advance (PATCH) - should not allow invalid state transition', async () => {
     // First create an order
-    const createResponse = await request(app.getHttpServer())
+    const createResponse = await request(getServer())
       .post('/api/orders')
       .set('Authorization', `Bearer ${authToken}`)
       .send({
@@ -134,22 +155,23 @@ describe('OrdersController (e2e)', () => {
       })
       .expect(201);
 
-    const orderId = createResponse.body.id;
+    const createBody = createResponse.body as OrderResponseDto;
+    const orderId = createBody.id;
 
     // Advance to ANALYSIS
-    await request(app.getHttpServer())
+    await request(getServer())
       .patch(`/api/orders/${orderId}/advance`)
       .set('Authorization', `Bearer ${authToken}`)
       .expect(200);
 
     // Advance to COMPLETED
-    await request(app.getHttpServer())
+    await request(getServer())
       .patch(`/api/orders/${orderId}/advance`)
       .set('Authorization', `Bearer ${authToken}`)
       .expect(200);
 
     // Try to advance again (should fail)
-    return request(app.getHttpServer())
+    return request(getServer())
       .patch(`/api/orders/${orderId}/advance`)
       .set('Authorization', `Bearer ${authToken}`)
       .expect(400);

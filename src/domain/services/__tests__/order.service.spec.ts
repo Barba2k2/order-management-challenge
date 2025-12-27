@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 import { OrderDomainService } from '../order.service';
 
 describe('OrderDomainService', () => {
@@ -32,31 +32,46 @@ describe('OrderDomainService', () => {
 
   describe('canTransitionState', () => {
     it('should allow transition from CREATED to ANALYSIS', () => {
-      const canTransition = orderDomainService.canTransitionState('CREATED', 'ANALYSIS');
+      const canTransition = orderDomainService.canTransitionState(
+        'CREATED',
+        'ANALYSIS',
+      );
 
       expect(canTransition).toBe(true);
     });
 
     it('should allow transition from ANALYSIS to COMPLETED', () => {
-      const canTransition = orderDomainService.canTransitionState('ANALYSIS', 'COMPLETED');
+      const canTransition = orderDomainService.canTransitionState(
+        'ANALYSIS',
+        'COMPLETED',
+      );
 
       expect(canTransition).toBe(true);
     });
 
     it('should not allow transition from CREATED to COMPLETED directly', () => {
-      const canTransition = orderDomainService.canTransitionState('CREATED', 'COMPLETED');
+      const canTransition = orderDomainService.canTransitionState(
+        'CREATED',
+        'COMPLETED',
+      );
 
       expect(canTransition).toBe(false);
     });
 
     it('should not allow transition from COMPLETED to ANALYSIS', () => {
-      const canTransition = orderDomainService.canTransitionState('COMPLETED', 'ANALYSIS');
+      const canTransition = orderDomainService.canTransitionState(
+        'COMPLETED',
+        'ANALYSIS',
+      );
 
       expect(canTransition).toBe(false);
     });
 
     it('should not allow transition from ANALYSIS to CREATED', () => {
-      const canTransition = orderDomainService.canTransitionState('ANALYSIS', 'CREATED');
+      const canTransition = orderDomainService.canTransitionState(
+        'ANALYSIS',
+        'CREATED',
+      );
 
       expect(canTransition).toBe(false);
     });
@@ -71,7 +86,7 @@ describe('OrderDomainService', () => {
         [
           { name: 'Service 1', value: 100, status: 'PENDING' },
           { name: 'Service 2', value: 50, status: 'DONE' },
-        ]
+        ],
       );
 
       expect(result.isValid).toBe(true);
@@ -83,9 +98,7 @@ describe('OrderDomainService', () => {
         '',
         'Patient X',
         'Customer Y',
-        [
-          { name: 'Service 1', value: 100, status: 'PENDING' },
-        ]
+        [{ name: 'Service 1', value: 100, status: 'PENDING' }],
       );
 
       expect(result.isValid).toBe(false);
@@ -97,9 +110,7 @@ describe('OrderDomainService', () => {
         'Lab A',
         '',
         'Customer Y',
-        [
-          { name: 'Service 1', value: 100, status: 'PENDING' },
-        ]
+        [{ name: 'Service 1', value: 100, status: 'PENDING' }],
       );
 
       expect(result.isValid).toBe(false);
@@ -111,9 +122,7 @@ describe('OrderDomainService', () => {
         'Lab A',
         'Patient X',
         '',
-        [
-          { name: 'Service 1', value: 100, status: 'PENDING' },
-        ]
+        [{ name: 'Service 1', value: 100, status: 'PENDING' }],
       );
 
       expect(result.isValid).toBe(false);
@@ -125,7 +134,7 @@ describe('OrderDomainService', () => {
         'Lab A',
         'Patient X',
         'Customer Y',
-        []
+        [],
       );
 
       expect(result.isValid).toBe(false);
@@ -137,9 +146,7 @@ describe('OrderDomainService', () => {
         'Lab A',
         'Patient X',
         'Customer Y',
-        [
-          { name: 'Service 1', value: 0, status: 'PENDING' },
-        ]
+        [{ name: 'Service 1', value: 0, status: 'PENDING' }],
       );
 
       expect(result.isValid).toBe(false);
@@ -151,9 +158,7 @@ describe('OrderDomainService', () => {
         'Lab A',
         'Patient X',
         'Customer Y',
-        [
-          { name: 'Service 1', value: -100, status: 'PENDING' },
-        ]
+        [{ name: 'Service 1', value: -100, status: 'PENDING' }],
       );
 
       expect(result.isValid).toBe(false);

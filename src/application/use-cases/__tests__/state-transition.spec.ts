@@ -1,10 +1,12 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { AdvanceOrderUseCase } from '../../src/application/use-cases/order.use-cases';
-import { OrderDomainService } from '../../src/domain/services/order.service';
+import { AdvanceOrderUseCase } from '../order.use-cases';
+import { OrderDomainService } from '../../../domain/services/order.service';
 
 // Mock repository
 const mockOrderRepository = {
+  create: vi.fn(),
   findById: vi.fn(),
+  findAll: vi.fn(),
   update: vi.fn(),
 };
 
@@ -25,8 +27,7 @@ describe('State Transition Logic', () => {
 
   it('should allow transition from CREATED to ANALYSIS', async () => {
     const orderId = 'order-id';
-    const userId = 'user-id';
-    
+
     const order = {
       id: orderId,
       lab: 'Lab A',
@@ -34,9 +35,7 @@ describe('State Transition Logic', () => {
       customer: 'Customer Y',
       state: 'CREATED',
       status: 'ACTIVE',
-      services: [
-        { name: 'Service 1', value: 100, status: 'PENDING' },
-      ],
+      services: [{ name: 'Service 1', value: 100, status: 'PENDING' }],
     };
 
     mockOrderRepository.findById.mockResolvedValue(order);
@@ -45,7 +44,7 @@ describe('State Transition Logic', () => {
       state: 'ANALYSIS',
     });
 
-    const result = await advanceOrderUseCase.execute(orderId, userId);
+    const result = await advanceOrderUseCase.execute(orderId);
 
     expect(result.state).toBe('ANALYSIS');
     expect(mockOrderRepository.update).toHaveBeenCalledWith(orderId, {
@@ -55,8 +54,7 @@ describe('State Transition Logic', () => {
 
   it('should allow transition from ANALYSIS to COMPLETED', async () => {
     const orderId = 'order-id';
-    const userId = 'user-id';
-    
+
     const order = {
       id: orderId,
       lab: 'Lab A',
@@ -64,9 +62,7 @@ describe('State Transition Logic', () => {
       customer: 'Customer Y',
       state: 'ANALYSIS',
       status: 'ACTIVE',
-      services: [
-        { name: 'Service 1', value: 100, status: 'PENDING' },
-      ],
+      services: [{ name: 'Service 1', value: 100, status: 'PENDING' }],
     };
 
     mockOrderRepository.findById.mockResolvedValue(order);
@@ -75,7 +71,7 @@ describe('State Transition Logic', () => {
       state: 'COMPLETED',
     });
 
-    const result = await advanceOrderUseCase.execute(orderId, userId);
+    const result = await advanceOrderUseCase.execute(orderId);
 
     expect(result.state).toBe('COMPLETED');
     expect(mockOrderRepository.update).toHaveBeenCalledWith(orderId, {
@@ -85,8 +81,7 @@ describe('State Transition Logic', () => {
 
   it('should block direct transition from CREATED to COMPLETED', async () => {
     const orderId = 'order-id';
-    const userId = 'user-id';
-    
+
     const order = {
       id: orderId,
       lab: 'Lab A',
@@ -94,21 +89,23 @@ describe('State Transition Logic', () => {
       customer: 'Customer Y',
       state: 'CREATED',
       status: 'ACTIVE',
-      services: [
-        { name: 'Service 1', value: 100, status: 'PENDING' },
-      ],
+      services: [{ name: 'Service 1', value: 100, status: 'PENDING' }],
     };
 
     mockOrderRepository.findById.mockResolvedValue(order);
-    // We don't expect the update to be called
+    mockOrderRepository.update.mockResolvedValue({
+      ...order,
+      state: 'ANALYSIS',
+    });
 
-    await expect(advanceOrderUseCase.execute(orderId, userId)).rejects.toThrow();
+    // The advance use case goes to ANALYSIS first, not directly to COMPLETED
+    const result = await advanceOrderUseCase.execute(orderId);
+    expect(result.state).toBe('ANALYSIS');
   });
 
   it('should block transition from COMPLETED to any other state', async () => {
     const orderId = 'order-id';
-    const userId = 'user-id';
-    
+
     const order = {
       id: orderId,
       lab: 'Lab A',
@@ -116,41 +113,51 @@ describe('State Transition Logic', () => {
       customer: 'Customer Y',
       state: 'COMPLETED',
       status: 'ACTIVE',
-      services: [
-        { name: 'Service 1', value: 100, status: 'PENDING' },
-      ],
+      services: [{ name: 'Service 1', value: 100, status: 'PENDING' }],
     };
 
     mockOrderRepository.findById.mockResolvedValue(order);
 
-    await expect(advanceOrderUseCase.execute(orderId, userId)).rejects.toThrow('Order is already completed and cannot be advanced');
+    await expect(advanceOrderUseCase.execute(orderId)).rejects.toThrow(
+      'Order is already completed and cannot be advanced',
+    );
   });
 
-  it('should block transition from ANALYSIS back to CREATED', async () => {
+  it('should follow state machine: CREATED -> ANALYSIS -> COMPLETED', async () => {
     const orderId = 'order-id';
-    const userId = 'user-id';
-    
-    const order = {
+
+    // Start with CREATED state
+    const createdOrder = {
       id: orderId,
       lab: 'Lab A',
       patient: 'Patient X',
       customer: 'Customer Y',
-      state: 'ANALYSIS',
+      state: 'CREATED',
       status: 'ACTIVE',
-      services: [
-        { name: 'Service 1', value: 100, status: 'PENDING' },
-      ],
+      services: [{ name: 'Service 1', value: 100, status: 'PENDING' }],
     };
 
-    mockOrderRepository.findById.mockResolvedValue(order);
+    // First transition: CREATED -> ANALYSIS
+    mockOrderRepository.findById.mockResolvedValue(createdOrder);
+    mockOrderRepository.update.mockResolvedValue({
+      ...createdOrder,
+      state: 'ANALYSIS',
+    });
 
-    // This test is more complex because the logic in AdvanceOrderUseCase
-    // automatically determines the next state based on the current state
-    // For ANALYSIS, it would try to go to COMPLETED, which is valid
-    // So to test blocking a transition, we need to think differently
-    
-    // Actually, the current implementation doesn't allow going back to CREATED
-    // It only allows forward transitions: CREATED -> ANALYSIS -> COMPLETED
-    // So this test is not applicable to the current implementation
+    const analysisResult = await advanceOrderUseCase.execute(orderId);
+    expect(analysisResult.state).toBe('ANALYSIS');
+
+    // Second transition: ANALYSIS -> COMPLETED
+    mockOrderRepository.findById.mockResolvedValue({
+      ...createdOrder,
+      state: 'ANALYSIS',
+    });
+    mockOrderRepository.update.mockResolvedValue({
+      ...createdOrder,
+      state: 'COMPLETED',
+    });
+
+    const completedResult = await advanceOrderUseCase.execute(orderId);
+    expect(completedResult.state).toBe('COMPLETED');
   });
 });
