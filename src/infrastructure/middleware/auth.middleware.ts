@@ -3,6 +3,7 @@ import { Request, Response, NextFunction } from 'express';
 import { AuthService } from '../auth/auth.service';
 
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace Express {
     interface Request {
       user?: {
@@ -19,9 +20,11 @@ export class AuthMiddleware implements NestMiddleware {
 
   use(req: Request, res: Response, next: NextFunction) {
     const authHeader = req.headers.authorization;
-    
+
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return res.status(401).json({ message: 'Authorization header missing or invalid' });
+      return res
+        .status(401)
+        .json({ message: 'Authorization header missing or invalid' });
     }
 
     const token = authHeader.substring(7); // Remove 'Bearer ' prefix

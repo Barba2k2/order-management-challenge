@@ -17,7 +17,10 @@ export class AuthService {
     return await bcrypt.hash(password, saltRounds);
   }
 
-  async verifyPassword(password: string, hashedPassword: string): Promise<boolean> {
+  async verifyPassword(
+    password: string,
+    hashedPassword: string,
+  ): Promise<boolean> {
     return await bcrypt.compare(password, hashedPassword);
   }
 
@@ -28,7 +31,7 @@ export class AuthService {
   verifyJwtToken(token: string): TokenPayload | null {
     try {
       return this.jwtService.verify<TokenPayload>(token);
-    } catch (error) {
+    } catch {
       return null;
     }
   }

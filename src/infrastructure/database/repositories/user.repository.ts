@@ -7,9 +7,13 @@ import { User, UserDocument } from '../schemas/user.schema';
 
 @Injectable()
 export class MongoUserRepository implements UserRepository {
-  constructor(@InjectModel(User.name) private readonly userModel: Model<UserDocument>) {}
+  constructor(
+    @InjectModel(User.name) private readonly userModel: Model<UserDocument>,
+  ) {}
 
-  async create(user: Omit<UserEntity, 'id' | 'createdAt' | 'updatedAt'>): Promise<UserEntity> {
+  async create(
+    user: Omit<UserEntity, 'id' | 'createdAt' | 'updatedAt'>,
+  ): Promise<UserEntity> {
     const createdUser = new this.userModel(user);
     const savedUser = await createdUser.save();
 

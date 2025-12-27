@@ -1,15 +1,22 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { Order as OrderEntity, OrderState } from '../../../domain/entities/order.entity';
+import {
+  Order as OrderEntity,
+  OrderState,
+} from '../../../domain/entities/order.entity';
 import { OrderRepository } from '../../../domain/repositories/order.repository';
 import { Order, OrderDocument } from '../schemas/order.schema';
 
 @Injectable()
 export class MongoOrderRepository implements OrderRepository {
-  constructor(@InjectModel(Order.name) private readonly orderModel: Model<OrderDocument>) {}
+  constructor(
+    @InjectModel(Order.name) private readonly orderModel: Model<OrderDocument>,
+  ) {}
 
-  async create(order: Omit<OrderEntity, 'id' | 'createdAt' | 'updatedAt'>): Promise<OrderEntity> {
+  async create(
+    order: Omit<OrderEntity, 'id' | 'createdAt' | 'updatedAt'>,
+  ): Promise<OrderEntity> {
     const createdOrder = new this.orderModel(order);
     const savedOrder = await createdOrder.save();
 
@@ -28,9 +35,9 @@ export class MongoOrderRepository implements OrderRepository {
   async findAll(
     page: number,
     limit: number,
-    state?: OrderState
+    state?: OrderState,
   ): Promise<{ orders: OrderEntity[]; total: number }> {
-    const query: any = { status: 'ACTIVE' }; // Only return active orders
+    const query: { status: string; state?: OrderState } = { status: 'ACTIVE' };
     if (state) {
       query.state = state;
     }
@@ -44,10 +51,10 @@ export class MongoOrderRepository implements OrderRepository {
         .limit(limit)
         .sort({ createdAt: -1 })
         .exec(),
-      this.orderModel.countDocuments(query)
+      this.orderModel.countDocuments(query),
     ]);
 
-    const mappedOrders = orders.map(order => {
+    const mappedOrders = orders.map((order) => {
       const { _id, ...orderData } = order.toObject();
       return { id: _id.toString(), ...orderData };
     });
@@ -55,7 +62,10 @@ export class MongoOrderRepository implements OrderRepository {
     return { orders: mappedOrders, total };
   }
 
-  async update(id: string, order: Partial<OrderEntity>): Promise<OrderEntity | null> {
+  async update(
+    id: string,
+    order: Partial<OrderEntity>,
+  ): Promise<OrderEntity | null> {
     const updatedOrder = await this.orderModel
       .findByIdAndUpdate(id, order, { new: true })
       .exec();
