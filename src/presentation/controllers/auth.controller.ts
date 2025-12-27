@@ -7,8 +7,15 @@ import {
   UsePipes,
   ValidationPipe,
 } from '@nestjs/common';
-import { RegisterDto, LoginDto, LoginResponseDto } from '../../application/dtos/auth.dtos';
-import { RegisterUseCase, LoginUseCase } from '../../application/use-cases/auth.use-cases';
+import {
+  RegisterDto,
+  LoginDto,
+  LoginResponseDto,
+} from '../../application/dtos/auth.dtos';
+import {
+  RegisterUseCase,
+  LoginUseCase,
+} from '../../application/use-cases/auth.use-cases';
 
 @Controller('auth')
 export class AuthController {
@@ -20,7 +27,9 @@ export class AuthController {
   @Post('register')
   @HttpCode(HttpStatus.CREATED)
   @UsePipes(new ValidationPipe({ transform: true }))
-  async register(@Body() registerDto: RegisterDto): Promise<{ message: string }> {
+  async register(
+    @Body() registerDto: RegisterDto,
+  ): Promise<{ message: string }> {
     await this.registerUseCase.execute(registerDto.email, registerDto.password);
     return { message: 'User registered successfully' };
   }
