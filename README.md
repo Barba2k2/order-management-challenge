@@ -61,8 +61,8 @@ src/
 ## Funcionalidades
 
 ### Autenticação
-- Registro de usuários com email/senha
-- Login com geração de JWT
+- Registro de usuários com email/senha e retorno de JWT
+- Login com retorno de JWT
 - Middleware de proteção de rotas
 
 ### Gestão de Pedidos
@@ -133,8 +133,8 @@ npm run test:cov
 
 | Método | Endpoint | Descrição |
 |--------|----------|-----------|
-| POST | `/api/auth/register` | Registro de usuário |
-| POST | `/api/auth/login` | Login |
+| POST | `/api/auth/register` | Registro de usuário (retorna JWT) |
+| POST | `/api/auth/login` | Login (retorna JWT) |
 
 ### Pedidos (Autenticado)
 
@@ -151,6 +151,16 @@ npm run test:cov
 curl -X POST http://localhost:3000/api/auth/register \
   -H "Content-Type: application/json" \
   -d '{"email": "user@example.com", "password": "password123"}'
+```
+**Resposta (exemplo):**
+```json
+{
+  "token": "<jwt>",
+  "user": {
+    "id": "<id>",
+    "email": "user@example.com"
+  }
+}
 ```
 
 **Criar Pedido:**
