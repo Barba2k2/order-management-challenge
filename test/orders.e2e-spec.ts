@@ -10,7 +10,10 @@ import type {
   OrderResponseDto,
   ListOrdersResponseDto,
 } from '../src/application/dtos/order.dtos';
-import type { LoginResponseDto } from '../src/application/dtos/auth.dtos';
+import type {
+  LoginResponseDto,
+  RegisterResponseDto,
+} from '../src/application/dtos/auth.dtos';
 
 describe('OrdersController (e2e)', () => {
   let app: INestApplication;
@@ -32,13 +35,17 @@ describe('OrdersController (e2e)', () => {
     await connection.dropDatabase();
 
     // Register and login a test user to get auth token
-    await request(getServer())
+    const registerResponse = await request(getServer())
       .post('/api/auth/register')
       .send({
         email: 'test@example.com',
         password: 'password123',
       })
       .expect(201);
+
+    const registerBody = registerResponse.body as RegisterResponseDto;
+    expect(registerBody.token).toBeTruthy();
+    expect(registerBody.user.email).toBe('test@example.com');
 
     const loginResponse = await request(getServer())
       .post('/api/auth/login')
@@ -49,6 +56,7 @@ describe('OrdersController (e2e)', () => {
       .expect(200);
 
     const loginBody = loginResponse.body as LoginResponseDto;
+    expect(loginBody.token).toBeTruthy();
     authToken = loginBody.token;
   });
 
@@ -132,6 +140,38 @@ describe('OrdersController (e2e)', () => {
       .expect((res) => {
         const body = res.body as OrderResponseDto;
         expect(body.id).toBe(orderId);
+        expect(body.state).toBe('ANALYSIS');
+      });
+  });
+
+  it('/api/orders/:id/advance (PATCH) - should not skip from CREATED to COMPLETED', async () => {
+    const createResponse = await request(getServer())
+      .post('/api/orders')
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({
+        lab: 'Test Lab 4',
+        patient: 'Test Patient 4',
+        customer: 'Test Customer 4',
+        services: [
+          {
+            name: 'Service 4',
+            value: 150,
+            status: 'PENDING',
+          },
+        ],
+      })
+      .expect(201);
+
+    const createBody = createResponse.body as OrderResponseDto;
+    const orderId = createBody.id;
+
+    return request(getServer())
+      .patch(`/api/orders/${orderId}/advance`)
+      .set('Authorization', `Bearer ${authToken}`)
+      .send({ state: 'COMPLETED' })
+      .expect(200)
+      .expect((res) => {
+        const body = res.body as OrderResponseDto;
         expect(body.state).toBe('ANALYSIS');
       });
   });
