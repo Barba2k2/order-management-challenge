@@ -35,7 +35,10 @@ export class LoginUseCase {
     private readonly authService: AuthService,
   ) {}
 
-  async execute(email: string, password: string): Promise<{ token: string; user: User }> {
+  async execute(
+    email: string,
+    password: string,
+  ): Promise<{ token: string; user: User }> {
     // Find user by email
     const user = await this.userRepository.findByEmail(email);
     if (!user) {
@@ -43,7 +46,10 @@ export class LoginUseCase {
     }
 
     // Verify password
-    const isPasswordValid = await this.authService.verifyPassword(password, user.password);
+    const isPasswordValid = await this.authService.verifyPassword(
+      password,
+      user.password,
+    );
     if (!isPasswordValid) {
       throw new UnauthorizedException('Invalid credentials');
     }

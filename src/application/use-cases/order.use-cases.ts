@@ -1,4 +1,9 @@
-import { Injectable, BadRequestException, ForbiddenException, Inject } from '@nestjs/common';
+import {
+  Injectable,
+  BadRequestException,
+  ForbiddenException,
+  Inject,
+} from '@nestjs/common';
 import type { OrderRepository } from '../../domain/repositories/order.repository';
 import { OrderDomainService } from '../../domain/services/order.service';
 import { Order, OrderState } from '../../domain/entities/order.entity';
@@ -6,7 +11,8 @@ import { Order, OrderState } from '../../domain/entities/order.entity';
 @Injectable()
 export class CreateOrderUseCase {
   constructor(
-    @Inject('OrderRepository') private readonly orderRepository: OrderRepository,
+    @Inject('OrderRepository')
+    private readonly orderRepository: OrderRepository,
     private readonly orderDomainService: OrderDomainService,
   ) {}
 
@@ -14,7 +20,11 @@ export class CreateOrderUseCase {
     lab: string,
     patient: string,
     customer: string,
-    services: Array<{ name: string; value: number; status: 'PENDING' | 'DONE' }>,
+    services: Array<{
+      name: string;
+      value: number;
+      status: 'PENDING' | 'DONE';
+    }>,
   ): Promise<Order> {
     // Validate order for creation
     const validation = this.orderDomainService.validateOrderForCreation(
@@ -42,14 +52,26 @@ export class CreateOrderUseCase {
 
 @Injectable()
 export class ListOrdersUseCase {
-  constructor(@Inject('OrderRepository') private readonly orderRepository: OrderRepository) {}
+  constructor(
+    @Inject('OrderRepository')
+    private readonly orderRepository: OrderRepository,
+  ) {}
 
   async execute(
     page: number = 1,
     limit: number = 10,
     state?: OrderState,
-  ): Promise<{ orders: Order[]; total: number; page: number; totalPages: number }> {
-    const { orders, total } = await this.orderRepository.findAll(page, limit, state);
+  ): Promise<{
+    orders: Order[];
+    total: number;
+    page: number;
+    totalPages: number;
+  }> {
+    const { orders, total } = await this.orderRepository.findAll(
+      page,
+      limit,
+      state,
+    );
 
     const totalPages = Math.ceil(total / limit);
 
@@ -65,11 +87,12 @@ export class ListOrdersUseCase {
 @Injectable()
 export class AdvanceOrderUseCase {
   constructor(
-    @Inject('OrderRepository') private readonly orderRepository: OrderRepository,
+    @Inject('OrderRepository')
+    private readonly orderRepository: OrderRepository,
     private readonly orderDomainService: OrderDomainService,
   ) {}
 
-  async execute(orderId: string, userId: string): Promise<Order> {
+  async execute(orderId: string): Promise<Order> {
     // Get the current order
     const order = await this.orderRepository.findById(orderId);
     if (!order) {
@@ -78,21 +101,14 @@ export class AdvanceOrderUseCase {
 
     // Check if the order is already completed
     if (order.state === 'COMPLETED') {
-      throw new BadRequestException('Order is already completed and cannot be advanced');
+      throw new BadRequestException(
+        'Order is already completed and cannot be advanced',
+      );
     }
 
     // Determine the next state based on current state
-    let nextState: OrderState;
-    switch (order.state) {
-      case 'CREATED':
-        nextState = 'ANALYSIS';
-        break;
-      case 'ANALYSIS':
-        nextState = 'COMPLETED';
-        break;
-      default:
-        throw new BadRequestException(`Order cannot be advanced from state: ${order.state}`);
-    }
+    const nextState: OrderState =
+      order.state === 'CREATED' ? 'ANALYSIS' : 'COMPLETED';
 
     // Validate if the transition is allowed
     if (!this.orderDomainService.canTransitionState(order.state, nextState)) {
