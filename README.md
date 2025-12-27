@@ -1,186 +1,171 @@
-# Desafio Técnico Backend - Order Management API
+# Order Management API
 
-**Objetivo:** Avaliar organização de código, domínio de TypeScript e implementação de regras de negócio.
-**Stack:** Node.js, NestJS, Mongoose, TypeScript, MongoDB.
-**Testes:** Vitest (Diferencial).
+API REST para gerenciamento de pedidos construída com NestJS, MongoDB e TypeScript, seguindo princípios de Clean Architecture.
 
-### Estrutura de Dados
+## Sobre o Desafio
 
-**1. User**
-* `email` (unique), `password`.
+Este projeto foi desenvolvido como solução para um desafio técnico backend, com foco em:
 
-**2. Order**
-* Campos: `lab`, `patient`, `customer` (strings).
-* `state`: `CREATED` -> `ANALYSIS` -> `COMPLETED`.
-* `status`: `ACTIVE` | `DELETED`.
-* `services` (Array obrigatório): `{ name: string, value: number, status: 'PENDING' | 'DONE' }`.
+- **Organização de código** - Clean Architecture com separação de responsabilidades
+- **TypeScript** - Tipagem estática em toda a aplicação
+- **Regras de negócio** - Validações e máquina de estados
+- **Testes** - Cobertura com Vitest (unitários e E2E)
 
----
+### Requisitos Implementados
 
-### ETAPA 1: Essencial (Obrigatório)
+**Etapa 1 - Essencial:**
+- [x] Autenticação com registro/login e JWT
+- [x] Middleware de proteção de rotas
+- [x] CRUD de pedidos com paginação e filtros
 
-1. **Autenticação:**
-* Registro e Login retornando JWT.
-* Middleware de proteção para rotas de pedidos.
+**Etapa 2 - Diferencial:**
+- [x] Validação: pedidos sem serviços ou valor zerado são rejeitados
+- [x] Máquina de estados com transições estritas
+- [x] Testes unitários e E2E com Vitest
 
-2. **Gestão de Pedidos:**
-* **POST /orders:** Criação do pedido. Padrão: `state: CREATED`, `status: ACTIVE`.
-* **GET /orders:** Listagem com paginação e filtro por `state`.
+## Stack
 
----
+- **Node.js** (v18+)
+- **NestJS** - Framework backend
+- **MongoDB** - Banco de dados
+- **Mongoose** - ODM
+- **TypeScript** - Tipagem estática
+- **Vitest** - Testes unitários e E2E
+- **JWT** - Autenticação
+- **Docker** - Containerização
 
-### ETAPA 2: Diferencial (Regras e Qualidade)
+## Arquitetura
 
-1. **Validação de Negócio:**
-* Não permitir criação de pedidos sem serviços ou com valor total zerado.
+O projeto segue **Clean Architecture** com separação clara de responsabilidades:
 
-2. **Fluxo de Status:**
-* Endpoint `PATCH /orders/:id/advance`.
-* A transição deve respeitar a ordem estrita: `CREATED` -> `ANALYSIS` -> `COMPLETED`.
-* Bloquear tentativas de pular etapas ou retroceder.
-
-3. **Testes (Vitest):**
-* Teste unitário garantindo que a lógica de transição de `state` funciona e bloqueia ações inválidas.
-
----
-
-### Critérios de Avaliação
-
-* **Arquitetura:** Separação de responsabilidades e clareza.
-* **TypeScript:** Uso correto de tipagem.
-* **Mongoose:** Modelagem e queries eficientes.
-* **Commits:** Histórico e organização no Git.
-
----
-
-## 🛠️ Instalação e Execução
-
-### Pré-requisitos
-
-- Node.js (v18 ou superior)
-- MongoDB (local ou remoto)
-- Docker e Docker Compose (opcional)
-
-### Instalação Local
-
-1. Clone o repositório:
-```bash
-git clone <url-do-repositorio>
-cd order_management_challenge
+```
+src/
+├── domain/                    # Camada de Domínio
+│   ├── entities/              # Entidades de negócio
+│   ├── repositories/          # Interfaces de repositórios
+│   ├── services/              # Serviços de domínio
+│   └── exceptions/            # Exceções de domínio
+├── application/               # Camada de Aplicação
+│   ├── dtos/                  # Data Transfer Objects
+│   ├── use-cases/             # Casos de uso
+│   └── validators/            # Validadores de negócio
+├── infrastructure/            # Camada de Infraestrutura
+│   ├── auth/                  # Serviço de autenticação JWT
+│   ├── database/              # Schemas e repositórios MongoDB
+│   ├── exceptions/            # Filtros de exceção
+│   └── middleware/            # Middlewares
+└── presentation/              # Camada de Apresentação
+    └── controllers/           # Controllers REST
 ```
 
-2. Instale as dependências:
-```bash
-npm install
-```
+## Funcionalidades
 
-3. Configure as variáveis de ambiente:
-```bash
-cp .env.example .env
-# Edite o arquivo .env com suas configurações
-```
+### Autenticação
+- Registro de usuários com email/senha
+- Login com geração de JWT
+- Middleware de proteção de rotas
 
-4. Execute a aplicação:
-```bash
-npm run start:dev
-```
+### Gestão de Pedidos
+- Criação de pedidos com serviços
+- Listagem com paginação e filtro por estado
+- Máquina de estados: `CREATED` → `ANALYSIS` → `COMPLETED`
+- Validação de transições (não permite pular etapas ou retroceder)
 
-A API estará disponível em `http://localhost:3000`
+### Validações de Negócio
+- Pedidos devem ter ao menos um serviço
+- Valor total não pode ser zero
+- Transições de estado seguem ordem estrita
 
-### Execução com Docker
+## Instalação
 
-1. Execute o comando:
+### Com Docker (Recomendado)
+
 ```bash
 docker-compose up -d
 ```
 
 A API estará disponível em `http://localhost:3000`
 
----
+### Local
 
-## ⚙️ Variáveis de Ambiente
-
-O projeto utiliza as seguintes variáveis de ambiente:
-
-```env
-# Database Configuration
-MONGODB_URI=mongodb://localhost:27017/order_management
-
-# JWT Configuration
-JWT_SECRET=your-super-secret-jwt-key
-
-# Application Configuration
-PORT=3000
+1. Instale as dependências:
+```bash
+npm install
 ```
 
-Para configurar as variáveis de ambiente localmente, crie um arquivo `.env` na raiz do projeto com base no arquivo `.env.example`:
-
+2. Configure as variáveis de ambiente:
 ```bash
 cp .env.example .env
 ```
 
----
+3. Execute a aplicação:
+```bash
+npm run start:dev
+```
 
-## 🧪 Testes
+## Variáveis de Ambiente
 
-Para executar os testes:
+```env
+MONGODB_URI=mongodb://localhost:27017/order_management
+JWT_SECRET=your-super-secret-jwt-key
+PORT=3000
+```
+
+## Testes
 
 ```bash
-# Testes unitários
+# Todos os testes
 npm run test
 
-# Testes de integração
+# Testes E2E
 npm run test:e2e
 
-# Testes unitários em modo watch
+# Modo watch
 npm run test:watch
+
+# Coverage
+npm run test:cov
 ```
 
-## 📦 Postman Collection
-
-Uma coleção do Postman com todos os endpoints da API está disponível na pasta `postman/` para facilitar os testes manuais:
-
-```
-postman/
-└── Order_Management_API.postman_collection.json
-```
-
-Para usar a coleção:
-1. Importe o arquivo JSON no Postman
-2. Configure uma variável de ambiente com a URL base (ex: `http://localhost:3000/api`)
-3. Registre e faça login para obter o token de autenticação
-4. Use os endpoints para testar a funcionalidade da API
-
----
-
-## 📋 Endpoints da API
+## Endpoints
 
 ### Autenticação
 
-- `POST /api/auth/register` - Registro de novo usuário
-- `POST /api/auth/login` - Login de usuário
+| Método | Endpoint | Descrição |
+|--------|----------|-----------|
+| POST | `/api/auth/register` | Registro de usuário |
+| POST | `/api/auth/login` | Login |
 
-### Pedidos
+### Pedidos (Autenticado)
 
-- `POST /api/orders` - Criação de pedido (requer autenticação)
-- `GET /api/orders` - Listagem de pedidos com paginação e filtro (requer autenticação)
-- `PATCH /api/orders/:id/advance` - Avanço de estado do pedido (requer autenticação)
+| Método | Endpoint | Descrição |
+|--------|----------|-----------|
+| POST | `/api/orders` | Criar pedido |
+| GET | `/api/orders` | Listar pedidos |
+| PATCH | `/api/orders/:id/advance` | Avançar estado |
 
----
+### Exemplos
 
-## 🏗️ Arquitetura
+**Registro:**
+```bash
+curl -X POST http://localhost:3000/api/auth/register \
+  -H "Content-Type: application/json" \
+  -d '{"email": "user@example.com", "password": "password123"}'
+```
 
-O projeto segue o padrão de Clean Architecture com as seguintes camadas:
+**Criar Pedido:**
+```bash
+curl -X POST http://localhost:3000/api/orders \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer <token>" \
+  -d '{
+    "lab": "Lab Test",
+    "patient": "Patient Name",
+    "customer": "Customer Name",
+    "services": [{"name": "Service 1", "value": 100, "status": "PENDING"}]
+  }'
+```
 
-- **Domain Layer**: Entidades e regras de negócio
-- **Application Layer**: Casos de uso e DTOs
-- **Infrastructure Layer**: Implementações de repositórios, autenticação e configurações
-- **Presentation Layer**: Controladores e middleware
+## Postman
 
----
-
-## 📅 Prazo de Entrega
-
-A data limite para submissão do link do repositório é **04/01**. Envios após essa data não serão considerados. Bom código!
-
-**Entrega:** Link do repositório com instruções de execução no README.
+Uma coleção do Postman está disponível em `postman/Order_Management_API.postman_collection.json`.
