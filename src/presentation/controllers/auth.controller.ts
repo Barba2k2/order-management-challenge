@@ -11,6 +11,7 @@ import {
   RegisterDto,
   LoginDto,
   LoginResponseDto,
+  RegisterResponseDto,
 } from '../../application/dtos/auth.dtos';
 import {
   RegisterUseCase,
@@ -29,9 +30,18 @@ export class AuthController {
   @UsePipes(new ValidationPipe({ transform: true }))
   async register(
     @Body() registerDto: RegisterDto,
-  ): Promise<{ message: string }> {
-    await this.registerUseCase.execute(registerDto.email, registerDto.password);
-    return { message: 'User registered successfully' };
+  ): Promise<RegisterResponseDto> {
+    const { token, user } = await this.registerUseCase.execute(
+      registerDto.email,
+      registerDto.password,
+    );
+    return {
+      token,
+      user: {
+        id: user.id!,
+        email: user.email,
+      },
+    };
   }
 
   @Post('login')

@@ -10,7 +10,10 @@ export class RegisterUseCase {
     private readonly authService: AuthService,
   ) {}
 
-  async execute(email: string, password: string): Promise<User> {
+  async execute(
+    email: string,
+    password: string,
+  ): Promise<{ token: string; user: User }> {
     // Check if user already exists
     const existingUser = await this.userRepository.findByEmail(email);
     if (existingUser) {
@@ -21,10 +24,16 @@ export class RegisterUseCase {
     const hashedPassword = await this.authService.hashPassword(password);
 
     // Create the user
-    return await this.userRepository.create({
+    const user = await this.userRepository.create({
       email,
       password: hashedPassword,
     });
+
+    // Generate JWT token
+    const tokenPayload = this.authService.createTokenPayload(user);
+    const token = this.authService.generateJwtToken(tokenPayload);
+
+    return { token, user };
   }
 }
 

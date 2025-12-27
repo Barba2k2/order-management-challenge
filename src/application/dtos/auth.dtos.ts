@@ -28,3 +28,11 @@ export class LoginResponseDto {
     email: string;
   };
 }
+
+export class RegisterResponseDto {
+  token: string;
+  user: {
+    id: string;
+    email: string;
+  };
+}
