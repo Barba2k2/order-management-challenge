@@ -4,9 +4,11 @@ import {
   MiddlewareConsumer,
   RequestMethod,
 } from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
 import { MongooseModule } from '@nestjs/mongoose';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule } from '@nestjs/config';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
 import {
   User,
   UserSchema,
@@ -35,6 +37,12 @@ import { OrdersController } from './presentation/controllers/orders.controller';
 @Module({
   imports: [
     ConfigModule.forRoot(),
+    ThrottlerModule.forRoot([
+      {
+        ttl: 60000,
+        limit: 10,
+      },
+    ]),
     MongooseModule.forRoot(
       process.env.MONGODB_URI || 'mongodb://mongo:27017/order_management',
     ),
@@ -49,6 +57,11 @@ import { OrdersController } from './presentation/controllers/orders.controller';
   ],
   controllers: [AuthController, OrdersController],
   providers: [
+    // Guards
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
     // Repositories
     { provide: 'UserRepository', useClass: MongoUserRepository },
     { provide: 'OrderRepository', useClass: MongoOrderRepository },
