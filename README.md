@@ -23,6 +23,11 @@ Este projeto foi desenvolvido como solução para um desafio técnico backend, c
 - [x] Máquina de estados com transições estritas
 - [x] Testes unitários e E2E com Vitest
 
+**Etapa 3 - Segurança (Cybersecurity):**
+- [x] **Helmet**: Proteção de headers HTTP contra vulnerabilidades comuns
+- [x] **Rate Limiting**: Proteção contra abuso e ataques de força bruta (10 req/min)
+- [x] **Global Validation Pipe**: Sanitização estrita de inputs (whitelist/forbidNonWhitelisted)
+
 ## Stack
 
 - **Node.js** (v18+)
